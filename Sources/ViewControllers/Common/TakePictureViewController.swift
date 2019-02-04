@@ -42,20 +42,25 @@ class TakePictureViewController: UIViewController {
         }
         guard var cameraController = self.cameraController else { return }
         cameraController.delegate = self
+        cameraController.imageType = imageType
         cameraController.show()
     }
+
+    func postImageSuccess(image: UIImage, forImageType imageType: ImageType) { /* Do nothing, overridable */ }
 }
 
 extension TakePictureViewController: CameraControllerDelegate {
-    func didGetImage(image: UIImage) {
+    func didGetImage(image: UIImage, forImageType imageType: ImageType?) {
         // For now, images will be always uploaded with type front
         uploadingImageBanner.show()
 
-        guard let productImage = ProductImage(barcode: barcode, image: image, type: imageType) else {
+        guard let productImage = ProductImage(barcode: barcode, image: image, type: imageType ?? .front) else {
             uploadingImageBanner.dismiss()
             uploadingImageErrorBanner.show()
             return
         }
+
+        log.debug("### post image for \(String(describing: imageType))")
 
         dataManager.postImage(productImage, onSuccess: { isOffline in
             if isOffline {
@@ -66,12 +71,10 @@ extension TakePictureViewController: CameraControllerDelegate {
 
             self.uploadingImageBanner.dismiss()
             self.uploadingImageSuccessBanner.show()
-            self.postImageSuccess(image: image)
+            self.postImageSuccess(image: image, forImageType: imageType ?? .front)
         }, onError: { _ in
             self.uploadingImageBanner.dismiss()
             self.uploadingImageErrorBanner.show()
         })
     }
-
-    @objc func postImageSuccess(image: UIImage) { /* Do nothing, overridable */ }
 }

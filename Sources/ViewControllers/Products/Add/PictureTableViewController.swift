@@ -11,7 +11,6 @@ import UIKit
 class PictureTableViewController: TakePictureViewController {
     @IBOutlet weak var tableView: UITableView!
     var pictures: [PictureViewModel]!
-    var currentPictureForCell: IndexPath?
 
     override func viewDidLoad() {
         tableView.isScrollEnabled = false
@@ -19,15 +18,22 @@ class PictureTableViewController: TakePictureViewController {
         pictures.append(PictureViewModel(imageType: .front))
         pictures.append(PictureViewModel(imageType: .ingredients))
         pictures.append(PictureViewModel(imageType: .nutrition))
-        currentPictureForCell = nil
     }
 
     @IBAction func didTapCellTakePictureButton(_ sender: UIButton) {
         guard let cell = sender.superview?.superview?.superview?.superview as? PictureTableViewCell else { return }
         guard let indexPath = tableView.indexPath(for: cell) else { return }
-        currentPictureForCell = indexPath
         imageType = pictures[indexPath.row].imageType
         didTapTakePictureButton(sender)
+    }
+
+    override func postImageSuccess(image: UIImage, forImageType imageType: ImageType) {
+        guard let pictureIndex = pictures.firstIndex(where: { (pic: PictureViewModel) -> Bool in
+            return pic.imageType == imageType
+        }) else { return }
+        log.debug("### got image for \(imageType)")
+        pictures[pictureIndex].image = image
+        tableView.reloadRows(at: [IndexPath(row: pictureIndex, section: 0)], with: .automatic)
     }
 }
 
@@ -47,15 +53,5 @@ extension PictureTableViewController: UITableViewDataSource {
         }
         cell.configure(viewModel: pictures[indexPath.row])
         return cell
-    }
-}
-
-// MARK: - TakePictureController extension
-extension PictureTableViewController {
-    override func postImageSuccess(image: UIImage) {
-        guard let indexPath = currentPictureForCell else { return }
-        pictures[indexPath.row].image = image
-        tableView.reloadRows(at: [indexPath], with: .automatic)
-        currentPictureForCell = nil
     }
 }
