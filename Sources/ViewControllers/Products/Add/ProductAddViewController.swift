@@ -12,18 +12,37 @@ import NotificationBanner
 class ProductAddViewController: TakePictureViewController {
     // IBOutlets
 
+    @IBOutlet weak var barcodeTitleLabel: UILabel!
     @IBOutlet weak var barcodeLabel: UILabel!
-    @IBOutlet weak var productNameField: UITextField!
-    @IBOutlet weak var brandsField: UITextField!
-    @IBOutlet weak var quantityField: UITextField!
-    @IBOutlet weak var quantityUnitField: UITextField!
-    @IBOutlet weak var languageField: UITextField!
+    @IBOutlet weak var topExplainationText: UILabel!
+    @IBOutlet weak var licenseExplainationLabel: UILabel!
+
     @IBOutlet weak var scrollView: UIScrollView!
+
+    @IBOutlet weak var productSectionTitle: UILabel!
+    @IBOutlet weak var productNameTitleLabel: UILabel!
+    @IBOutlet weak var productNameField: UITextField!
+    @IBOutlet weak var brandsTitleLabel: UILabel!
+    @IBOutlet weak var brandsField: UITextField!
+    @IBOutlet weak var quantityTitleLabel: UILabel!
+    @IBOutlet weak var quantityExampleLabel: UILabel!
+    @IBOutlet weak var quantityField: UITextField!
+    @IBOutlet weak var languageTitleLabel: UILabel!
+    @IBOutlet weak var languageField: UITextField!
     @IBOutlet weak var productTextSection: UIView!
 
-    // Constants
+    @IBOutlet weak var nutritiveSectionTitle: UILabel!
+    @IBOutlet weak var nutritivePortionSegmentedControl: UISegmentedControl!
 
-    let validQuantityUnits = ["g", "mg", "kg", "l", "cl", "ml"]
+    @IBOutlet weak var ingredientsSectionTitle: UILabel!
+    @IBOutlet weak var ingredientsExplainationLabel: UILabel!
+    @IBOutlet weak var ingredientsTextField: UITextView!
+    @IBOutlet weak var ignoreIngredientsButton: UIButton!
+    @IBOutlet weak var saveIngredientsButton: UIButton!
+
+    @IBOutlet var saveButtons: [UIButton]!
+
+    // Constants
 
     // ivars
 
@@ -57,11 +76,33 @@ class ProductAddViewController: TakePictureViewController {
     private var languageValue: String = "en" // Use English as default
 
     override func viewDidLoad() {
-        configureQuantityUnitField()
+        barcodeTitleLabel.text = "product-add.titles.barcode".localized
+        topExplainationText.text = "product-add.titles.top-explainations".localized
+        licenseExplainationLabel.text = "product-add.titles.license-explaination".localized
+
+        productSectionTitle.text = "product-add.titles.product-info".localized
+        productNameTitleLabel.text = "product-add.label.product-name".localized
+        brandsTitleLabel.text = "product-add.placeholder.brand".localized
+        quantityTitleLabel.text = "product-add.label.quantity".localized
+        quantityExampleLabel.text = "product-add.label.quantity-example".localized
+        languageTitleLabel.text = "product-add.label.language".localized
+        saveButtons.forEach { (button: UIButton) in
+            button.setTitle("generic.save".localized, for: .normal)
+        }
+
+        nutritiveSectionTitle.text = "product-add.titles.nutritive".localized;
+        nutritivePortionSegmentedControl.setTitle("product-add.nutritive.choice.per-hundred-grams".localized, forSegmentAt: 0)
+        nutritivePortionSegmentedControl.setTitle("product-add.nutritive.choice.per-portion".localized, forSegmentAt: 1)
+
+        ingredientsSectionTitle.text = "product-add.titles.ingredients".localized
+        ingredientsExplainationLabel.text = "product-add.ingredients.explaination".localized
+        ingredientsTextField.text = ""
+        ignoreIngredientsButton.setTitle("product-add.ingredients.button-delete".localized, for: .normal)
+        saveIngredientsButton.setTitle("product-add.ingredients.button-save".localized, for: .normal)
+
         configureLanguageField()
         configureDelegates()
         configureNotifications()
-        configureProductTextSection()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -84,9 +125,7 @@ class ProductAddViewController: TakePictureViewController {
             product.brands = [brand]
         }
 
-        if let value = quantityField.text, let unit = quantityUnitField.text {
-            product.quantity = "\(value) \(unit)"
-        }
+        product.quantity = quantityField.text
 
         dataManager.addProduct(product, onSuccess: {
             self.productAddSuccessBanner.show()
@@ -102,24 +141,6 @@ class ProductAddViewController: TakePictureViewController {
             destination.barcode = barcode
             destination.dataManager = dataManager
         }
-    }
-
-    private func configureQuantityUnitField() {
-        self.quantityUnitPickerController = PickerViewController(data: validQuantityUnits, defaultValue: 0, delegate: self)
-        self.quantityUnitPickerToolbarController = PickerToolbarViewController(delegate: self)
-
-        if let pickerView = quantityUnitPickerController?.view as? UIPickerView {
-            self.quantityUnitField.inputView = pickerView
-        }
-
-        if let toolbarView = quantityUnitPickerToolbarController?.view as? UIToolbar {
-            self.quantityUnitField.inputAccessoryView = toolbarView
-        }
-
-        self.quantityUnitField.text = validQuantityUnits[0]
-
-        // Hide blinking cursor
-        self.quantityUnitField.tintColor = .clear
     }
 
     private func configureLanguageField() {
@@ -153,7 +174,6 @@ class ProductAddViewController: TakePictureViewController {
         productNameField.delegate = self
         brandsField.delegate = self
         quantityField.delegate = self
-        quantityUnitField.delegate = self
         languageField.delegate = self
     }
 
@@ -176,17 +196,8 @@ class ProductAddViewController: TakePictureViewController {
             quantityField.text = quantityValue
         }
 
-        if let quantityUnit = pendingUploadItem.quantityUnit {
-            quantityUnitField.text = quantityUnit
-        }
-
         // Set language
         didGetSelection(value: Language(code: pendingUploadItem.language, name: Locale.current.localizedString(forIdentifier: pendingUploadItem.language) ?? pendingUploadItem.language))
-    }
-
-    private func configureProductTextSection() {
-        productTextSection.layer.borderColor = UIColor.lightGray.cgColor
-        productTextSection.layer.borderWidth = 1.0
     }
 }
 
@@ -235,8 +246,6 @@ extension ProductAddViewController: PickerViewDelegate {
         case let language as Language:
             self.languageValue = language.code
             self.languageField.text = language.name
-        case let string as String:
-            self.quantityUnitField.text = string
         default:
             // Do nothing
             return

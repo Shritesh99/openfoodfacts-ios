@@ -12,6 +12,7 @@
 // Generic strings that could be useful anywhere.
 "generic.back" = "Retour";
 "generic.search" = "Rechercher";
+"generic.save" = "Sauvegarder";
 
 // Product Search
 
@@ -62,7 +63,26 @@
 /* Product Add brand text field */
 "product-add.placeholder.brand" = "Marque";
 /* Product Add quantity text field */
-"product-add.placeholder.quantity-value" = "Quantity value";
+"product-add.placeholder.quantity-value" = "Quantité";
+
+"product-add.titles.barcode" = "Code-barres";
+"product-add.titles.top-explainations" = "Ce produit n'est pas encore dans la base de données Open Food Facts. Pourriez-vous prendre quelques photos du produit, de son code-barre, de la liste des ingrédients et des informations nutritives afin de l'ajouter à la base ?   Merci par avance.";
+"product-add.titles.license-explaination" = "Note : les photos que vous envoyées sont publiées sous la license gratuite Creative Commons Attribution and ShareAlike.";
+
+"product-add.titles.product-info" = "Informations sur le produit";
+"product-add.label.product-name" = "Nom";
+"product-add.label.quantity" = "Quantité";
+"product-add.label.quantity-example" = "25g, 10oz, 5ml...";
+"product-add.label.language" = "Langage";
+
+"product-add.titles.nutritive" = "Données nutritives";
+"product-add.nutritive.choice.per-hundred-grams" = "pour 100g / 100ml";
+"product-add.nutritive.choice.per-portion" = "par portion";
+
+"product-add.titles.ingredients" = "Ingrédients";
+"product-add.ingredients.explaination" = "Prenez une photo de la liste des ingrédients (deuxième image plus haut), et la liste des ingrédients sera pré-remplie. Corrigez la si nécessaire, puis enregistrez !";
+"product-add.ingredients.button-delete" = "Ignorer";
+"product-add.ingredients.button-save" = "Valider les ingrédients";
 
 // Product Detail
 "product-detail.header.add-new-picture" = "Ajouter une nouvelle image";

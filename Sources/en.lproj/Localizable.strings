@@ -12,6 +12,7 @@
 // Generic strings that could be useful anywhere.
 "generic.back" = "Back";
 "generic.search" = "Search";
+"generic.save" = "Save";
 
 // Product Search
 
@@ -62,7 +63,26 @@
 /* Product Add brand text field */
 "product-add.placeholder.brand" = "Brand";
 /* Product Add quantity text field */
-"product-add.placeholder.quantity-value" = "Quantity value";
+"product-add.placeholder.quantity" = "Quantity value";
+
+"product-add.titles.barcode" = "Barcode";
+"product-add.titles.top-explainations" = "This product is not yet in the Open Food Facts database. Could you please take some pictures of the product, barcode, ingredients list and nutrition facts to add it on Open Food Facts?   Thanks in advance.";
+"product-add.titles.license-explaination" = "Note: the pictures you send are published under the free licence Creative Commons Attribution and ShareAlike.";
+
+"product-add.titles.product-info" = "Product information";
+"product-add.label.product-name" = "Name";
+"product-add.label.quantity" = "Quantity";
+"product-add.label.quantity-example" = "25g, 10oz, 5ml...";
+"product-add.label.language" = "Language";
+
+"product-add.titles.nutritive" = "Nutritive data";
+"product-add.nutritive.choice.per-hundred-grams" = "for 100g / 100ml";
+"product-add.nutritive.choice.per-portion" = "per portion";
+
+"product-add.titles.ingredients" = "Ingredients";
+"product-add.ingredients.explaination" = "Take a picture of the ingredients list (second image above), and the list of ingredients will be prefilled. Fix it if needed, then save it!";
+"product-add.ingredients.button-delete" = "Ignore";
+"product-add.ingredients.button-save" = "Save ingredients";
 
 // Product Detail
 "product-detail.header.add-new-picture" = "Add a new picture";
