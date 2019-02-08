@@ -8,9 +8,14 @@
 
 import UIKit
 
+protocol PictureTableViewControllerDelegate: class {
+    func didPostIngredientImage()
+}
+
 class PictureTableViewController: TakePictureViewController {
     @IBOutlet weak var tableView: UITableView!
     var pictures: [PictureViewModel]!
+    weak var delegate: PictureTableViewControllerDelegate?
 
     override func viewDidLoad() {
         tableView.isScrollEnabled = false
@@ -34,6 +39,10 @@ class PictureTableViewController: TakePictureViewController {
         log.debug("### got image for \(imageType)")
         pictures[pictureIndex].image = image
         tableView.reloadRows(at: [IndexPath(row: pictureIndex, section: 0)], with: .automatic)
+
+        if imageType == .ingredients {
+            delegate?.didPostIngredientImage()
+        }
     }
 }
 

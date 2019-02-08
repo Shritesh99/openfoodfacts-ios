@@ -22,6 +22,8 @@ class ProductAddViewController: TakePictureViewController {
     @IBOutlet weak var productSectionTitle: UILabel!
     @IBOutlet weak var productNameTitleLabel: UILabel!
     @IBOutlet weak var productNameField: UITextField!
+    @IBOutlet weak var productCategoryTitleLabel: UILabel!
+    @IBOutlet weak var productCategoryField: UITextField!
     @IBOutlet weak var brandsTitleLabel: UILabel!
     @IBOutlet weak var brandsField: UITextField!
     @IBOutlet weak var quantityTitleLabel: UILabel!
@@ -30,15 +32,24 @@ class ProductAddViewController: TakePictureViewController {
     @IBOutlet weak var languageTitleLabel: UILabel!
     @IBOutlet weak var languageField: UITextField!
     @IBOutlet weak var productTextSection: UIView!
+    @IBOutlet weak var saveProductInfosButton: UIButton!
+    @IBOutlet var productInformationsTextFields: [UITextField]!
+    @IBOutlet weak var lastSavedProductInfosLabel: UILabel!
 
     @IBOutlet weak var nutritiveSectionTitle: UILabel!
+    @IBOutlet weak var portionSizeInputView: EditNutritiveValueView!
     @IBOutlet weak var nutritivePortionSegmentedControl: UISegmentedControl!
+    @IBOutlet weak var nutritiveValuesStackView: UIStackView!
+    @IBOutlet weak var addNutrimentButton: UIButton!
+    @IBOutlet weak var saveNutrimentsButton: UIButton!
+    @IBOutlet weak var lastSavedNutrimentsLabel: UILabel!
 
     @IBOutlet weak var ingredientsSectionTitle: UILabel!
     @IBOutlet weak var ingredientsExplainationLabel: UILabel!
     @IBOutlet weak var ingredientsTextField: UITextView!
     @IBOutlet weak var ignoreIngredientsButton: UIButton!
     @IBOutlet weak var saveIngredientsButton: UIButton!
+    @IBOutlet weak var lastSavedIngredientsLabel: UILabel!
 
     @IBOutlet var saveButtons: [UIButton]!
 
@@ -46,8 +57,6 @@ class ProductAddViewController: TakePictureViewController {
 
     // ivars
 
-    var activeField: UITextField?
-    var contentInsetsBeforeKeyboard = UIEdgeInsets.zero
     lazy var product = Product()
     lazy var productPostErrorAlert: UIAlertController = {
         let alert = UIAlertController(title: "product-add.save-error.title".localized,
@@ -69,11 +78,23 @@ class ProductAddViewController: TakePictureViewController {
 
     // Private vars
 
-    private var quantityUnitPickerController: PickerViewController?
-    private var quantityUnitPickerToolbarController: PickerToolbarViewController?
+    fileprivate var activeField: UIView?
+    fileprivate var lastOffset: CGPoint = CGPoint(x: 0, y: 0)
+
     private var languagePickerController: PickerViewController?
     private var languagePickerToolbarController: PickerToolbarViewController?
     private var languageValue: String = "en" // Use English as default
+
+    private var productCategory: Category?
+    private var productCategoryCustomName: String?
+
+    fileprivate var displayedNutrimentItems = [
+        "energy",
+        "fat",
+        "saturated-fat",
+        "carbohydrates",
+        "sugars"
+    ]
 
     override func viewDidLoad() {
         barcodeTitleLabel.text = "product-add.titles.barcode".localized
@@ -82,6 +103,8 @@ class ProductAddViewController: TakePictureViewController {
 
         productSectionTitle.text = "product-add.titles.product-info".localized
         productNameTitleLabel.text = "product-add.label.product-name".localized
+        productCategoryTitleLabel.text = "product-add.label.category".localized
+        productCategoryField.placeholder = "product-add.label.category".localized
         brandsTitleLabel.text = "product-add.placeholder.brand".localized
         quantityTitleLabel.text = "product-add.label.quantity".localized
         quantityExampleLabel.text = "product-add.label.quantity-example".localized
@@ -89,16 +112,24 @@ class ProductAddViewController: TakePictureViewController {
         saveButtons.forEach { (button: UIButton) in
             button.setTitle("generic.save".localized, for: .normal)
         }
+        lastSavedProductInfosLabel.isHidden = true
 
-        nutritiveSectionTitle.text = "product-add.titles.nutritive".localized;
+        nutritiveSectionTitle.text = "product-add.titles.nutritive".localized
         nutritivePortionSegmentedControl.setTitle("product-add.nutritive.choice.per-hundred-grams".localized, forSegmentAt: 0)
         nutritivePortionSegmentedControl.setTitle("product-add.nutritive.choice.per-portion".localized, forSegmentAt: 1)
+        portionSizeInputView.titleLabel.text = "product-detail.nutrition.serving-size".localized
+        portionSizeInputView.inputTextField.placeholder = "product-detail.nutrition.serving-size".localized
+        addNutrimentButton.setTitle("product-add.nutritive.add-nutriment".localized + " >", for: .normal)
+        lastSavedNutrimentsLabel.isHidden = true
+
+        refreshNutritiveInputsViews()
 
         ingredientsSectionTitle.text = "product-add.titles.ingredients".localized
         ingredientsExplainationLabel.text = "product-add.ingredients.explaination".localized
         ingredientsTextField.text = ""
         ignoreIngredientsButton.setTitle("product-add.ingredients.button-delete".localized, for: .normal)
         saveIngredientsButton.setTitle("product-add.ingredients.button-save".localized, for: .normal)
+        lastSavedIngredientsLabel.isHidden = true
 
         configureLanguageField()
         configureDelegates()
@@ -114,8 +145,10 @@ class ProductAddViewController: TakePictureViewController {
         }
     }
 
-    @IBAction func didTapSaveButton(_ sender: UIButton) {
-        activeField?.resignFirstResponder()
+    @IBAction func didTapSaveProductButton(_ sender: UIButton) {
+        self.view.endEditing(true)
+        saveProductInfosButton.isEnabled = false
+        self.showSavingIndication(label: lastSavedProductInfosLabel, key: "save-info")
 
         // Set field values in product
         product.name = productNameField.text
@@ -125,21 +158,115 @@ class ProductAddViewController: TakePictureViewController {
             product.brands = [brand]
         }
 
+        if let category = productCategory {
+            product.categories = [category.code]
+        } else if let category = productCategoryCustomName {
+            product.categories = [(Bundle.main.preferredLocalizations.first ?? "en") + ":" + category]
+        } else {
+            product.categories = nil
+        }
+
         product.quantity = quantityField.text
 
-        dataManager.addProduct(product, onSuccess: {
-            self.productAddSuccessBanner.show()
-            self.navigationController?.popToRootViewController(animated: true)
-        }, onError: { _ in
-            self.present(self.productPostErrorAlert, animated: true, completion: nil)
+        dataManager.addProduct(product, onSuccess: { [weak self] in
+            self?.showSavedSuccess(label: self?.lastSavedProductInfosLabel, key: "save-info")
+            self?.saveProductInfosButton.isEnabled = true
+        }, onError: { [weak self] _ in
+            self?.showSavedError(label: self?.lastSavedProductInfosLabel, key: "save-info")
+            self?.saveProductInfosButton.isEnabled = true
         })
+    }
+
+    @IBAction func didTapSaveNutrimentsButton(_ sender: Any) {
+        self.view.endEditing(true)
+        self.saveNutrimentsButton.isEnabled = false
+        self.showSavingIndication(label: lastSavedNutrimentsLabel, key: "save-nutriments")
+
+        if let servingSize = portionSizeInputView.inputTextField.text {
+            product.servingSize = servingSize
+        }
+        if nutritivePortionSegmentedControl.selectedSegmentIndex == 0 {
+            product.nutritionDataPer = .hundredGrams
+        } else {
+            product.nutritionDataPer = .serving
+        }
+        var nutriments = [String: String]()
+        nutritiveValuesStackView.arrangedSubviews.forEach { (view: UIView) in
+            if let view = view as? EditNutritiveValueView {
+                if let value = view.inputTextField.text {
+                    nutriments[view.nutrimentCode] = value
+                }
+            }
+        }
+        dataManager.addProductNutritionTable(product, nutritionTable: nutriments, onSuccess: { [weak self] in
+            self?.showSavedSuccess(label: self?.lastSavedNutrimentsLabel, key: "save-nutriments")
+            self?.saveNutrimentsButton.isEnabled = true
+            }, onError: { [weak self] _ in
+                self?.showSavedError(label: self?.lastSavedNutrimentsLabel, key: "save-nutriments")
+                self?.saveNutrimentsButton.isEnabled = true
+        })
+    }
+
+    @IBAction func didTapIgnoreIngredientsButton(_ sender: Any) {
+        self.ingredientsTextField.text = nil
+        self.lastSavedIngredientsLabel.isHidden = true
+    }
+
+    @IBAction func didTapSaveIngredientsButton(_ sender: Any) {
+        self.view.endEditing(true)
+        self.ignoreIngredientsButton.isEnabled = false
+        self.saveIngredientsButton.isEnabled = false
+        self.showSavingIndication(label: lastSavedIngredientsLabel, key: "save-ingredients")
+
+        self.product.ingredientsList = self.ingredientsTextField.text
+
+        dataManager.addProduct(product, onSuccess: { [weak self] in
+            self?.showSavedSuccess(label: self?.lastSavedIngredientsLabel, key: "save-ingredients")
+            self?.ignoreIngredientsButton.isEnabled = true
+            self?.saveIngredientsButton.isEnabled = true
+            }, onError: { [weak self] _ in
+                self?.showSavedError(label: self?.lastSavedIngredientsLabel, key: "save-ingredients")
+                self?.ignoreIngredientsButton.isEnabled = true
+                self?.saveIngredientsButton.isEnabled = true
+        })
+    }
+
+    @IBAction func addNutrimentButtonTapped(_ sender: Any) {
+        //open select nutriment
+        let selectNutrimentViewController = SelectNutrimentViewController(nibName: "SelectNutrimentViewController", bundle: nil)
+        selectNutrimentViewController.dataManager = self.dataManager
+        selectNutrimentViewController.delegate = self
+        self.navigationController?.pushViewController(selectNutrimentViewController, animated: true)
     }
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "TakePictureSegue" {
             guard let destination = segue.destination as? PictureTableViewController else { return; }
+            destination.delegate = self
             destination.barcode = barcode
             destination.dataManager = dataManager
+        }
+    }
+
+    fileprivate func refreshNutritiveInputsViews() {
+        while nutritiveValuesStackView.arrangedSubviews.count < displayedNutrimentItems.count {
+            let newView = EditNutritiveValueView(frame: CGRect())
+            newView.inputTextField.delegate = self
+            nutritiveValuesStackView.addArrangedSubview(newView)
+        }
+        while nutritiveValuesStackView.arrangedSubviews.count > displayedNutrimentItems.count, let last = nutritiveValuesStackView.arrangedSubviews.last {
+            nutritiveValuesStackView.removeArrangedSubview(last)
+            last.removeFromSuperview()
+        }
+
+        displayedNutrimentItems.enumerated().forEach { (index: Int, element: String) in
+            if let view = nutritiveValuesStackView.arrangedSubviews[index] as? EditNutritiveValueView {
+                let nutriment = dataManager.nutriment(forTag: element)
+                let nutrimentName = nutriment?.names.chooseForCurrentLanguage()?.value ?? element
+                view.nutrimentCode = element
+                view.titleLabel.text = nutrimentName
+                view.inputTextField.placeholder = nutrimentName
+            }
         }
     }
 
@@ -173,14 +300,44 @@ class ProductAddViewController: TakePictureViewController {
     private func configureDelegates() {
         productNameField.delegate = self
         brandsField.delegate = self
+        productCategoryField.delegate = self
         quantityField.delegate = self
         languageField.delegate = self
+        portionSizeInputView.inputTextField.delegate = self
+        ingredientsTextField.delegate = self
     }
 
     private func configureNotifications() {
         let notificationCenter = NotificationCenter.default
         notificationCenter.addObserver(self, selector: #selector(keyboardWillShow), name: Notification.Name.UIKeyboardWillShow, object: nil)
         notificationCenter.addObserver(self, selector: #selector(keyboardWillHide), name: Notification.Name.UIKeyboardWillHide, object: nil)
+
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.dismissKeyboard (_:)))
+        self.view.addGestureRecognizer(tapGesture)
+    }
+
+    fileprivate func showNotSavedIndication(label: UILabel?, key: String) {
+        label?.text = "⚠️ " + "product-add.\(key).not-yet".localized
+        label?.isHidden = false
+    }
+
+    fileprivate func showSavingIndication(label: UILabel?, key: String) {
+        label?.text = "📡 " + "product-add.\(key).saving".localized
+        label?.isHidden = false
+    }
+
+    fileprivate func showSavedSuccess(label: UILabel?, key: String) {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .none
+        dateFormatter.timeStyle = .short
+
+        label?.text = "product-add.\(key).success".localized + " " + dateFormatter.string(from: Date())
+        label?.isHidden = false
+    }
+
+    fileprivate func showSavedError(label: UILabel?, key: String) {
+        label?.text =  "🚨 " + "product-add.\(key).error".localized
+        label?.isHidden = false
     }
 
     private func fillForm(withPendingUploadItem pendingUploadItem: PendingUploadItem) {
@@ -198,45 +355,126 @@ class ProductAddViewController: TakePictureViewController {
 
         // Set language
         didGetSelection(value: Language(code: pendingUploadItem.language, name: Locale.current.localizedString(forIdentifier: pendingUploadItem.language) ?? pendingUploadItem.language))
+        showNotSavedIndication(label: lastSavedProductInfosLabel, key: "save-info")
     }
 }
 
 // MARK: - Keyboard notification handler
 extension ProductAddViewController {
     @objc func keyboardWillShow(notification: Notification) {
-        let info = notification.userInfo
-        guard let keyboardFrame = (info?[UIKeyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return }
-        guard let activeField = self.activeField else { return }
+        let userInfo = notification.userInfo
+        // swiftlint:disable:next force_cast
+        let keyboardFrame = userInfo?[UIKeyboardFrameEndUserInfoKey] as! CGRect
+        let contentInset = UIEdgeInsets(top: 0, left: 0, bottom: keyboardFrame.height, right: 0)
+        scrollView.contentInset = contentInset
+        scrollView.scrollIndicatorInsets = contentInset
 
-        let keyboardHeight: CGFloat = keyboardFrame.height < keyboardFrame.width ? keyboardFrame.height : keyboardFrame.width
-
-        self.contentInsetsBeforeKeyboard = scrollView.contentInset
-        var contentInsets = scrollView.contentInset
-        contentInsets.bottom = keyboardHeight
-        scrollView.contentInset = contentInsets
-        scrollView.scrollIndicatorInsets = contentInsets
-
-        // If field is hidden by keyboard, scroll so it's visible
-        var frame = self.view.frame
-        frame.size.height -= keyboardHeight
-        if !frame.contains(activeField.frame.origin) {
-            scrollView.scrollRectToVisible(activeField.frame, animated: true)
+        // move if keyboard hide input field
+        let distanceToBottom = self.scrollView.frame.size.height - (activeField?.frame.origin.y ?? 0) - (activeField?.frame.size.height ?? 0)
+        let collapseSpace = keyboardFrame.height - distanceToBottom
+        if collapseSpace < 0 {
+            // no collapse
+            return
         }
+        // set new offset for scroll view
+        UIView.animate(withDuration: 0.3, animations: {
+            // scroll to the position above keyboard 10 points
+            self.scrollView.contentOffset = CGPoint(x: self.lastOffset.x, y: collapseSpace + 10)
+        })
     }
 
     @objc func keyboardWillHide(notification: Notification) {
-        scrollView.contentInset = self.contentInsetsBeforeKeyboard
-        scrollView.scrollIndicatorInsets = self.contentInsetsBeforeKeyboard
+        let contentInset = UIEdgeInsets.zero
+        scrollView.contentInset = contentInset
+        scrollView.scrollIndicatorInsets = contentInset
+    }
+
+    @objc func dismissKeyboard (_ sender: UITapGestureRecognizer) {
+        self.view.endEditing(true)
     }
 }
 
 extension ProductAddViewController: UITextFieldDelegate {
-    func textFieldDidBeginEditing(_ textField: UITextField) {
+    func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
+        if textField == productCategoryField {
+            //open select category
+            let selectCategoryViewController = SelectCategoryViewController(nibName: "SelectCategoryViewController", bundle: nil)
+            selectCategoryViewController.dataManager = self.dataManager
+            selectCategoryViewController.delegate = self
+            self.navigationController?.pushViewController(selectCategoryViewController, animated: true)
+            return false
+        }
         activeField = textField
+        lastOffset = self.scrollView.contentOffset
+        return true
     }
 
-    func textFieldDidEndEditing(_ textField: UITextField) {
-        activeField = nil
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if productInformationsTextFields.contains(textField) {
+            showNotSavedIndication(label: lastSavedProductInfosLabel, key: "save-info")
+        }
+        if textField.isDescendant(of: nutritiveValuesStackView) {
+            showNotSavedIndication(label: lastSavedNutrimentsLabel, key: "save-nutriments")
+        }
+        return true
+    }
+
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        self.view.endEditing(true)
+        return false
+    }
+}
+
+extension ProductAddViewController: UITextViewDelegate {
+    func textViewShouldBeginEditing(_ textView: UITextView) -> Bool {
+        activeField = textView
+        lastOffset = self.scrollView.contentOffset
+        return true
+    }
+
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        showNotSavedIndication(label: lastSavedIngredientsLabel, key: "save-ingredients")
+        return true
+    }
+}
+
+extension ProductAddViewController: PictureTableViewControllerDelegate {
+    func didPostIngredientImage() {
+        dataManager.getIngredientsOCR(forBarcode: barcode, productLanguageCode: self.languageValue) { [weak self] (ingredients: String?, _: Error?) in
+            if let ingredients = ingredients {
+                self?.ingredientsTextField.text = ingredients
+                self?.showNotSavedIndication(label: self?.lastSavedIngredientsLabel, key: "save-ingredients")
+            }
+        }
+    }
+}
+
+extension ProductAddViewController: SelectCategoryDelegate {
+    func didSelect(category: Category) {
+        productCategoryField.text = category.names.chooseForCurrentLanguage(defaultToFirst: true)?.value ?? category.code
+        self.productCategory = category
+        self.productCategoryCustomName = nil
+        self.navigationController?.popToViewController(self, animated: true)
+        showNotSavedIndication(label: lastSavedProductInfosLabel, key: "save-info")
+    }
+
+    func didSelect(customCategory: String) {
+        productCategoryField.text = customCategory
+        self.productCategory = nil
+        self.productCategoryCustomName = customCategory
+        self.navigationController?.popToViewController(self, animated: true)
+        showNotSavedIndication(label: lastSavedProductInfosLabel, key: "save-info")
+    }
+}
+
+extension ProductAddViewController: SelectNutrimentDelegate {
+    func didSelect(nutriment: Nutriment) {
+        if !displayedNutrimentItems.contains(nutriment.code) {
+            displayedNutrimentItems.append(nutriment.code)
+            refreshNutritiveInputsViews()
+        }
+        self.navigationController?.popToViewController(self, animated: true)
+        showNotSavedIndication(label: lastSavedNutrimentsLabel, key: "save-nutriments")
     }
 }
 
@@ -253,6 +491,6 @@ extension ProductAddViewController: PickerViewDelegate {
     }
 
     func didDismiss() {
-        self.activeField?.resignFirstResponder()
+        self.view.endEditing(true)
     }
 }

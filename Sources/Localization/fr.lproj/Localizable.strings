@@ -56,6 +56,19 @@
 "product-add.uploaded-image" = "Image téléchargée, merci!";
 "product-add.save-error.title" = "Erreur lors de la sauvegarde du produit";
 "product-add.save-error.message" = "Veuillez réessayer ultérieurement";
+"product-add.save-info.success" = "Informations sauvegardées à";
+"product-add.save-info.error" = "Informations non sauvegardées";
+"product-add.save-info.saving" = "Sauvegarde des nformations..";
+"product-add.save-info.not-yet" = "Informations non sauvegardées";
+"product-add.save-ingredients.success" = "Ingrédients sauvegardés à";
+"product-add.save-ingredients.error" = "Ingrédients non sauvegardés";
+"product-add.save-ingredients.saving" = "Sauvegarde des ingrédients...";
+"product-add.save-ingredients.not-yet" = "Ingrédients non sauvegardés";
+"product-add.save-nutriments.success" = "Table nutritionnelle sauvegardée à";
+"product-add.save-nutriments.error" = "Table nutritionnelle non sauvegardée";
+"product-add.save-nutriments.saving" = "Sauvegarde de la table nutritionnelle...";
+"product-add.save-nutriments.not-yet" = "Table nutritionnelle non sauvegardée";
+
 "alert.action.ok" = "Ok";
 "product-add.language.toolbar-title" = "Select a language";
 /* Product Add name text field */
@@ -71,6 +84,7 @@
 
 "product-add.titles.product-info" = "Informations sur le produit";
 "product-add.label.product-name" = "Nom";
+"product-add.label.category" = "Catégorie";
 "product-add.label.quantity" = "Quantité";
 "product-add.label.quantity-example" = "25g, 10oz, 5ml...";
 "product-add.label.language" = "Langage";
@@ -78,11 +92,20 @@
 "product-add.titles.nutritive" = "Données nutritives";
 "product-add.nutritive.choice.per-hundred-grams" = "pour 100g / 100ml";
 "product-add.nutritive.choice.per-portion" = "par portion";
+"product-add.nutritive.add-nutriment" = "Ajouter un élement de nutrition";
 
 "product-add.titles.ingredients" = "Ingrédients";
 "product-add.ingredients.explaination" = "Prenez une photo de la liste des ingrédients (deuxième image plus haut), et la liste des ingrédients sera pré-remplie. Corrigez la si nécessaire, puis enregistrez !";
 "product-add.ingredients.button-delete" = "Ignorer";
 "product-add.ingredients.button-save" = "Valider les ingrédients";
+
+// Select Category
+"select-category.title" = "Categorie";
+"select-category.search-placeholder" = "Recherchez une catégorie";
+
+//Select Nutriment
+"select-nutriment.title" = "Nutrition";
+"select-nutriment.search-placeholder" = "Recherchez un élément de nutrition";
 
 // Product Detail
 "product-detail.header.add-new-picture" = "Ajouter une nouvelle image";

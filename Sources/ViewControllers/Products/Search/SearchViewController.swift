@@ -23,18 +23,6 @@ class SearchViewController: UIViewController, DataManagerClient {
         }
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-
-        //TODO: remove
-        let storyboard = UIStoryboard(name: String(describing: ProductAddViewController.self), bundle: nil)
-        if let addProductVC = storyboard.instantiateInitialViewController() as? ProductAddViewController {
-            addProductVC.barcode = "00012345678"
-            addProductVC.dataManager = dataManager
-            self.rootNavigationController?.pushViewController(addProductVC, animated: true)
-        }
-    }
-
     private func createScanButton() -> UIBarButtonItem {
         let scanButton = UIBarButtonItem(image: UIImage(named: "barcode"), style: .plain, target: self, action: #selector(scanBarcode(_:)))
         scanButton.accessibilityIdentifier = AccessibilityIdentifiers.scanButton
